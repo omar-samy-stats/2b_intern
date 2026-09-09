@@ -121,4 +121,5 @@ else:
         for doc in sources:
             section = doc.metadata.get("H2") or doc.metadata.get("H3") or "N/A"
             filename = os.path.basename(doc.metadata.get("source", ""))
-            st.write(f"- **{filename}** — {section}"###############################################################
+            st.write(f"- **{filename}** — {section}")   
+            ###############################################################
