@@ -1,0 +1,11 @@
+.env
+__pycache__/
+*.pyc
+chroma_db/
+Include/
+Lib/
+Scripts/
+share/
+etc/
+pyvenv.cfg
+.ipynb_checkpoints/

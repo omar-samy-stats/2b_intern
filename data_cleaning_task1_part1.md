@@ -1,0 +1,44 @@
+# Data Cleaning Task 1 (Part 1) — Notebook Summary
+
+## Note on dataset choice
+This dataset (`Unclean Dataset.csv`, the student records dataset) is a different, separate dataset from the one used in the other 3 files of the project (the consumer/purchase-intent dataset used for supervised ML and clustering). The ML dataset was already relatively clean and did not need this kind of repair work, so it wouldn't have been a good fit for demonstrating data cleaning skills. This student dataset was deliberately chosen instead, specifically because it is messy enough to showcase real data cleaning work — identifying corrupted rows, fixing malformed columns, and reformatting inconsistent values — rather than being part of the same modeling pipeline as the other notebooks.
+
+## Purpose of this notebook
+This notebook is the first stage of a data cleaning exercise on a deliberately messy dataset called `Unclean Dataset.csv`, loaded from a local downloads folder. The dataset is meant to simulate real-world dirty data: it contains student records (Student_ID, First_Name, Last_Name, Age, Gender, Course, Enrollment_Date, Total_Payments) but arrives badly malformed. The goal of this notebook is to inspect the mess, understand exactly what's wrong with it, and begin cleaning it into a usable structured table.
+
+## What was found when the data was first loaded
+On first load, the dataset immediately showed a severe structural problem: instead of being properly split into 8 separate columns, many rows had all their fields crammed together into a single string, separated by pipe characters (`|`), inside what was supposed to be just the `Student_ID` column. For example, one row's `Student_ID` field actually contained something like "217 | Chukwudi | | 22 | M | Data Science | 2022-05-15 | $1200" all as one blob of text, while the real `First_Name`, `Last_Name`, `Age`, `Gender`, `Course`, `Enrollment_Date`, and `Total_Payments` columns for that row were empty (NaN). This meant the CSV's actual delimiter structure was inconsistent — some rows were properly split by commas into their real columns, while others had gotten mangled into one giant pipe-separated string sitting in the first column only.
+
+Column names themselves were also messy — every column name had stray leading/trailing whitespace baked into it (e.g. `" Age "` instead of `"Age"`, `"Student_ID "` with a trailing space), which matters practically because pandas treats `"Age"` and `" Age "` as two completely different column names — any code referencing columns has to match the exact whitespace or it silently fails or throws a KeyError.
+
+## Why `df.info()` was used
+Checking `.info()` revealed the real scope of the damage: out of 136 total rows, only 132 had any value in Student_ID, and the other columns were far worse — First_Name had only 99 non-null values, Last_Name only 18, Age only 53, Gender only 59, Course only 54, Enrollment_Date only 60, and Total_Payments only 58. Every single column was also typed as `object` (raw string), even Age and Total_Payments which should logically be numeric — a sign that dirty formatting (extra characters, currency symbols, inconsistent text) was preventing pandas from recognizing them as numbers automatically.
+
+## Why specific rows/values were inspected individually
+Individual values were pulled out and printed directly (rather than just looking at the whole table) specifically to confirm the pipe-delimiter corruption theory — by looking at one bad row's raw string content directly, it became clear that the row's real data was all jammed into one field rather than being missing entirely. This is an important distinction: it's not that the data was lost, it's that it was misparsed. That understanding is what shaped every decision that followed — it wasn't just "fill in missing values," it was "figure out which rows are salvageable versus which rows are genuinely corrupted beyond easy repair."
+
+Filtering rows where Age was greater than a string value ("21") was also tried as an exploratory check on the Age column specifically, which surfaced more anomalies — some Age values had trailing asterisks (like "78*" or "21*"), and at least one row had two numbers jammed together in the Age field (like "22" and "24" concatenated), suggesting a comma or delimiter had gone missing between two separate fields during the original file's creation.
+
+## The core cleaning decision: dropping incomplete rows
+The most significant decision in this notebook was to drop every row containing any missing (NaN) value entirely, rather than trying to salvage or impute the badly corrupted rows individually. The reasoning documented directly in the notebook was that the corrupted rows had no consistent pattern to their damage — each one was messy in its own unique way, so it would not be efficient to manually inspect and hand-fix each row one at a time. The decision was to treat these as unreliable/wrong data and keep only the subset of rows that already had complete, properly-separated values across all columns. This shrank the dataset from 136 rows down to a much smaller clean subset (starting around row 35 in the original indexing and continuing with gaps), trading data quantity for reliability.
+
+## Why Total_Payments was reformatted
+The Total_Payments column arrived in wildly inconsistent formats — some values had a question mark before the number (likely a broken currency symbol, possibly a Naira sign that didn't render correctly in the encoding), some had a British pound sign (£), and the numbers themselves had inconsistent comma placement. The cleaning step stripped out every non-digit character from each value (removing currency symbols, commas, spaces), converted what remained to a plain integer, and then reformatted every value uniformly with a dollar sign and proper thousands-comma formatting (e.g., turning inconsistent raw text into a clean "$50,000" style format). This was done specifically to standardize a column that will later be used for numeric analysis, and to make the currency representation consistent regardless of what symbol or format the source data originally used.
+
+## Why Age was reformatted
+Age had the same category of problem — some values had trailing asterisks or other stray characters. The cleaning step stripped every non-digit character out of the Age field and converted the result into a proper integer type, so Age could actually be used numerically (e.g., for filtering, averaging, or later modeling) instead of being stuck as unreliable text.
+
+## Why Gender was reformatted
+Some Gender values had stray digits mixed into them (a side effect of the earlier pipe-delimiter corruption bleeding into adjacent fields). The cleaning step stripped out any digit characters from Gender, leaving just the letter values (M/F) as clean text.
+
+## Why the index was reset
+After dropping rows, the DataFrame's index still reflected the original row numbers from the messy full dataset (e.g., starting at 35, with gaps where dropped rows used to be). The index was reset and renumbered starting from 1, so the cleaned dataset reads as a fresh, sequential table rather than carrying visible scars of which original rows were removed.
+
+## Why Student_ID was dropped at the end
+By the final step, the Student_ID column was dropped entirely from the cleaned dataset. This column had been the source of the original corruption (it's where all the jammed-together pipe-separated data had been dumped for the bad rows), and once the dataset was filtered down to only clean, properly-separated rows, the Student_ID column's original values were no longer needed or trustworthy as a distinct identifier — the newly reset row index effectively takes over that role.
+
+## Known issue left unresolved in this notebook
+While reformatting Total_Payments and Age, pandas raised `SettingWithCopyWarning` on several of the transformation steps. This warning indicates the operations were performed on a "view" (a slice) of the original DataFrame rather than a guaranteed independent copy, meaning the changes might not always reliably persist or could behave unpredictably in edge cases. The proper fix (using `.loc[row_indexer, col_indexer] = value` instead of direct column assignment) was not applied in this notebook — this is a known rough edge in the cleaning process that a reader/reviewer of this project should be aware of, even though the output appeared to work as intended in this run.
+
+## What this notebook produces as its final output
+A cleaned DataFrame (`df_clean`) containing only fully complete student records, with Age and Total_Payments converted to proper usable formats, Gender stripped of stray characters, a fresh sequential index, and the unreliable Student_ID column removed. This cleaned data is the foundation that later parts of the project (Part 2 onward, e.g., EDA and visualization) build on top of.
