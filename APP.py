@@ -9,9 +9,9 @@ load_dotenv()
 
 api_key = os.environ.get("GEMINI_API_KEY")
 
-if not api_key:
-    raise ValueError("GEMINI_API_KEY is not set in the environment variables.")
-print(api_key)
+
+if not api_key and "api_key" in st.secrets:
+        api_key = st.secrets["api_key"]
 
 
 
@@ -121,6 +121,4 @@ else:
         for doc in sources:
             section = doc.metadata.get("H2") or doc.metadata.get("H3") or "N/A"
             filename = os.path.basename(doc.metadata.get("source", ""))
-            st.write(f"- **{filename}** — {section}")
-
-#################################  the webpage for my own Machine : http://localhost:8501/      ###############################
+            st.write(f"- **{filename}** — {section}"###############################################################
