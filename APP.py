@@ -6,12 +6,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 import streamlit as st
 
 load_dotenv()
-
-api_key = os.environ.get("GEMINI_API_KEY")
-
-
-if not api_key and "api_key" in st.secrets:
-        api_key = st.secrets["api_key"]
+api_key = os.environ.get("GEMINI_API_KEY") or st.secrets.get("GEMINI_API_KEY")
 
 
 
