@@ -68,7 +68,7 @@ def get_text(response):         # <-- This function extracts the text content fr
     return str(response.content)
 
 
-def answer_question(query, user_name, k=3):    # <-- this function retrieves relevant documents based on the query, constructs a prompt, and generates an answer using the model
+def answer_question(query, user_name, k=6):    # <-- this function retrieves relevant documents based on the query, constructs a prompt, and generates an answer using the model
     retrieved_docs = vectorstore.similarity_search(query, k=k)
     prompt = build_prompt(query, retrieved_docs, user_name)
     response = model.invoke(prompt)   # <-- Generating the answer using the model with the constructed prompt
